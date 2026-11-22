@@ -1,0 +1,16 @@
+Lumei Diction Studio
+
+Speech recognition: vosk-browser 0.0.8 by ccoreilly et al., Apache-2.0.
+https://github.com/ccoreilly/vosk-browser
+Vosk French and Italian small acoustic models 0.22, Alpha Cephei, Apache-2.0.
+https://alphacephei.com/vosk/models
+The model archives retain their original readme files; only packaging was changed.
+
+Speech/IPA: eSpeak NG, GPL-3.0-or-later. Emscripten distribution 0.3.5 from Echogarden.
+https://github.com/echogarden/espeak-ng-emscripten
+https://github.com/echogarden/espeak-ng/tree/fork
+Distribution modification: unused language dictionaries were omitted. tools/assets.mjs in the source repository reproduces this packaging. License: vendor/ESPEAK-LICENSE.txt.
+
+Icons: Lucide, ISC and MIT. See vendor/LUCIDE-LICENSE.txt.
+Source and asset build instructions: https://github.com/xiaoluyier/lulu-diction
+

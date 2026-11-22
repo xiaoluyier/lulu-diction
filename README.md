@@ -28,7 +28,7 @@ languisce il cor.
 ## 本地与发布
 需要 Node.js 22+。运行 `npm start`，然后打开 http://127.0.0.1:4387 。本地服务只绑定回环地址。可从私有环境提供 DEEPSEEK_API_KEY、DEEPSEEK_BASE_URL、DEEPSEEK_MODEL；密钥不出现在响应中。可以通过 Node 的 --env-file 使用现有本机配置，另设 PORT 可覆盖端口。不要将 .env 发布至 GitHub。
 
-`npm test` 运行状态与解析测试。静态站位于 site，含已构建资源，无需构建即可托管。GitHub Pages 从 gh-pages 分支根目录发布。维护者使用 `git subtree split --prefix site -b <新分支>` 后将该分支推送至 gh-pages 即可更新。
+`npm test` 运行状态与解析测试。静态站位于 site。首次本地运行纠音前执行 python tools/models.py。在 main 推送更新时，GitHub Actions 验证测试、下载及校验两种语音模型，然后发布到 Pages。
 
 重建资源：npm ci；node tools/assets.mjs；python tools/models.py（requests）；python tools/lumei.py（Pillow，重建封面时需 Georgia 字体）。语音组件与模型来源见 site/NOTICE.txt。
 

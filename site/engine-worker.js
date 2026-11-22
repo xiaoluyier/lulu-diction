@@ -1,0 +1,4 @@
+import load from './vendor/espeak-ng.js';
+const ready=load({locateFile:n=>new URL('./vendor/'+n,self.location.href).href}).then(m=>new m.eSpeakNGWorker());
+self.onmessage=async({data:{id,lang,words,text,rate}})=>{try{const eng=await ready;eng.set_voice(lang==='fr'?'fr':'it');if(words){const ipa={};for(const w of words)ipa[w]=eng.synthesize_ipa(w).ipa.trim().replaceAll('_','').replace(/-$/,'').replace(lang==='fr'?/ˈ/g:/$^/g,'');postMessage({id,ipa});}else{eng.set_rate(Math.round(rate*153));const chunks=[];eng.synthesize(text,a=>{chunks.push(a);return 0});const samples=new Int16Array(chunks.reduce((s,a)=>s+a.length,0));let n=0;for(const a of chunks){samples.set(a,n);n+=a.length;}postMessage({id,samples,hz:eng.get_samplerate()},[samples.buffer])}}catch(e){postMessage({id,error:String(e.message||e)})}};
+

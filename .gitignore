@@ -1,0 +1,7 @@
+node_modules/
+site/assets/*-model.tar.gz
+.cache/
+.env*
+!.env.example
+playwright-report/
+
