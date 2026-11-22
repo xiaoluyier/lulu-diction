@@ -11,11 +11,8 @@ concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.publish.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - run: node --test tests/*.test.mjs
@@ -32,9 +29,16 @@ jobs:
           key: piper-siwis-paola-medium-v1
       - run: python tools/natural_voices.py
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+    steps:
       - id: publish
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
