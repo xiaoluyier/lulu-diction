@@ -19,7 +19,7 @@ languisce il cor.
 浏览器在当前设备保存曲目、复听提醒和小目标。录音只在本次评测视图保留，切页释放。清除站点数据会清空进度。
 
 ## 声音与纠音
-- 示范优先使用系统同语种的语音。没有相应声音时使用随站提供的 eSpeak NG。自动音标按词典和读音规则推算，多音词仍需结合语境。
+- 内置曲目使用预生成的 Piper 神经语音（法语 SIWIS，意大利语 Paola）。新歌词按需在本机浏览器合成，每种语言首次下载约 63 MB 模型及共用运行时；无需上传歌词。eSpeak NG 提供音标与语音模型的音素输入。自动音标按词典和读音规则推算，多音词仍需结合语境。
 - 默认在浏览器按需加载 Vosk 小模型（法语约 42 MB，意大利语约 50 MB）。自由转写与目标文本对齐，只能提示辨读差异。相同的转写不代表发音正确。录音不离开设备。
 - 设置可启用 Azure Speech 专业朗读评测。将选中一句或一词的 16kHz PCM 录音及原文发到指定区域；保留词级匹配证据。法语和意大利语不提供实际发出的音素名称。
 - DeepSeek 仅接收目标文本和有证据的问题，返回练法，不编造音素诊断。公开静态站可输入使用者自己的密钥（仅保存在页面内存）；不填仍有程序生成的基础练法。
@@ -30,5 +30,5 @@ languisce il cor.
 
 `npm test` 运行状态与解析测试。静态站位于 site。首次本地运行纠音前执行 python tools/models.py。在 main 推送更新时，GitHub Actions 验证测试、下载及校验两种语音模型，然后发布到 Pages。
 
-重建资源：npm ci；node tools/assets.mjs；python tools/models.py（requests）；python tools/lumei.py（Pillow，重建封面时需 Georgia 字体）。语音组件与模型来源见 site/NOTICE.txt。
+重建资源：npm ci；node tools/assets.mjs；python tools/natural_voices.py；python tools/models.py（requests）；python tools/lumei.py（Pillow，重建封面时需 Georgia 字体）。语音组件与模型来源见 site/NOTICE.txt。
 

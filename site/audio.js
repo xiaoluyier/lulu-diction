@@ -2,14 +2,21 @@ let worker,seq=0,ctx,source,utter,cancelPlay,serial=0;const pending=new Map();
 function engine(args){if(!worker){worker=new Worker(new URL('./engine-worker.js',import.meta.url),{type:'module'});worker.onmessage=({data})=>{const pair=pending.get(data.id);if(!pair)return;pending.delete(data.id);data.error?pair[1](Error(data.error)):pair[0](data)};worker.onerror=()=>{for(const p of pending.values())p[1](Error('语音组件未加载，请刷新重试。'));pending.clear();worker.terminate();worker=null;};}return new Promise((resolve,reject)=>{const id=++seq;pending.set(id,[resolve,reject]);worker.postMessage({id,...args})});}
 export const transcribe=async(lang,words)=>(await engine({lang,words})).ipa;
 export function unlock(){ctx??=new (window.AudioContext||window.webkitAudioContext)();return ctx.resume()}
-export function stop(){serial++;if(cancelPlay)cancelPlay();cancelPlay=null;try{window.speechSynthesis?.cancel();source?.stop()}catch{}source=null;utter=null;}
+let neural,media,prepared;const jobs=new Map(),cache=new Map();
+function render(text,lang,rate){
+ const key=JSON.stringify([text,lang,rate]);if(cache.has(key))return Promise.resolve(cache.get(key));
+ if(!neural){neural=new Worker(new URL('./natural-worker.js',import.meta.url),{type:'module'});neural.onmessage=({data:d})=>{const job=jobs.get(d.id);if(!job)return;jobs.delete(d.id);if(d.error){job.reject(Error(d.error));return}if(cache.size>=30)cache.delete(cache.keys().next().value);cache.set(job.key,d);job.resolve(d)};neural.onerror=()=>{for(const j of jobs.values())j.reject(Error('自然语音暂不可用。'));jobs.clear();neural.terminate();neural=null;};}
+ return new Promise((resolve,reject)=>{const id=++seq;jobs.set(id,{resolve,reject,key});neural.postMessage({id,text,lang,rate})});
+}
+export function stop(){serial++;cancelPlay?.();cancelPlay=null;media?.pause();media=null;try{source?.stop()}catch{}source=null;}
 export async function speak(text,lang,rate=1){
- stop();const id=serial;await unlock();const synth=window.speechSynthesis;
- const voice=synth?.getVoices().find(v=>v.lang.toLowerCase().startsWith(lang));
- if(voice){try{const ok=await new Promise((res,rej)=>{const u=new SpeechSynthesisUtterance(text);utter=u;u.voice=voice;u.lang=voice.lang;u.rate=rate;const timer=setTimeout(()=>{synth.cancel();rej(Error())},Math.max(7000,text.length*300));cancelPlay=()=>{clearTimeout(timer);res(false)};u.onend=()=>{clearTimeout(timer);res(id===serial)};u.onerror=()=>{clearTimeout(timer);rej(Error())};synth.speak(u)});return ok;}catch{if(id!==serial)return false}}
- const d=await engine({lang,text,rate});if(id!==serial)return false;
- if(!d.samples.length)throw Error('没有生成示范音频。');const b=ctx.createBuffer(1,d.samples.length,d.hz);b.copyToChannel(Float32Array.from(d.samples,x=>x/32768),0);
- return new Promise(res=>{source=ctx.createBufferSource();source.buffer=b;source.connect(ctx.destination);source.onended=()=>res(id===serial);cancelPlay=()=>res(false);source.start()});
+ stop();const id=serial;await unlock();
+ prepared??=import('./voice-clips.js').then(m=>m.clips).catch(()=>({}));const path=(await prepared)[lang+'|'+text.toLowerCase().trim()];if(id!==serial)return false;
+ if(path){try{return await new Promise((ok,no)=>{const a=media=new Audio(new URL('./clips/'+path,import.meta.url));a.preservesPitch=true;a.playbackRate=rate;a.onended=()=>ok(id===serial);a.onerror=()=>no(Error());cancelPlay=()=>ok(false);a.play().catch(no)})}catch{if(id!==serial)return false}}
+ const wait=setTimeout(()=>{if(id===serial)window.dispatchEvent(new Event('preparing-natural-voice'))},900);
+ let d;try{d=await render(text,lang,rate)}finally{clearTimeout(wait)}
+ if(id!==serial)return false;const b=ctx.createBuffer(1,d.samples.length,d.hz);b.copyToChannel(d.samples,0);
+ return new Promise(ok=>{source=ctx.createBufferSource();source.buffer=b;source.connect(ctx.destination);source.onended=()=>ok(id===serial);cancelPlay=()=>ok(false);source.start()});
 }
 export async function capture(){
  if(!navigator.mediaDevices?.getUserMedia)throw Error('浏览器没有提供麦克风，请用 HTTPS 在 Safari 或 Chrome 中打开。');

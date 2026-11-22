@@ -1,6 +1,6 @@
 import http from 'node:http';import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';import {advicePrompt} from './site/assessment.js';
 const root=fileURLToPath(new URL('./site/',import.meta.url)),port=Number(process.env.PORT||4387),host='127.0.0.1';
-const types={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.gif':'image/gif','.gz':'application/octet-stream','.data':'application/octet-stream','.txt':'text/plain'};
+const types={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.wasm':'application/wasm','.mp3':'audio/mpeg','.json':'application/json','.wav':'audio/wav','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.gif':'image/gif','.gz':'application/octet-stream','.data':'application/octet-stream','.txt':'text/plain'};
 http.createServer(async(req,res)=>{try{
  if(req.headers.host!==host+':'+port&&req.headers.host!=='localhost:'+port){res.writeHead(403).end();return;}
  const url=new URL(req.url,'http://localhost'),json=(status,obj)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'}).end(JSON.stringify(obj))};

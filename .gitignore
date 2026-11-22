@@ -1,4 +1,5 @@
 node_modules/
+site/voices/
 site/assets/*-model.tar.gz
 .cache/
 .env*

@@ -25,6 +25,12 @@ jobs:
           key: vosk-fr-it-official-0.22
       - run: python -m pip install requests
       - run: python tools/models.py
+      - run: npm ci --ignore-scripts --no-audit
+      - uses: actions/cache@v4
+        with:
+          path: site/voices/*.onnx
+          key: piper-siwis-paola-medium-v1
+      - run: python tools/natural_voices.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

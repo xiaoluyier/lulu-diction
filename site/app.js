@@ -54,3 +54,4 @@ document.addEventListener('click',async ev=>{const b=ev.target.closest('[data-do
 document.addEventListener('change',ev=>{const id=ev.target.id,v=ev.target.value;if(id==='selectSong'){data.id=v;save();go('home')}else if(id==='lineSel')go('review',+v);else if(id==='posSel')go('review',line,+v);else if(id==='rate'){data.rate=Number(v);save()}});
 $('#home').onclick=()=>go('home');$('#settings').onclick=()=>{if(busy){msg('请先结束录音或评测。');return}settings()};window.addEventListener('pagehide',reset);draw();
 
+window.addEventListener('preparing-natural-voice',()=>msg('正在准备自然语音；首次使用需下载语音包。'));

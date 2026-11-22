@@ -1,5 +1,7 @@
 Lumei Diction Studio
 
+French/Italian speech and included MP3 samples: Piper SIWIS (fr_FR) and Paola (it_IT), https://huggingface.co/rhasspy/piper-voices . SIWIS French Speech Synthesis Database (CC BY 4.0), https://datashare.is.ed.ac.uk/handle/10283/2353 ; OHF-Voice Paola dataset (CC0), https://github.com/OHF-Voice/voice-datasets . Audio generated from lyric text. ONNX Runtime Web, Microsoft, MIT license. Model cards are distributed in the voices directory.
+
 Speech recognition: vosk-browser 0.0.8 by ccoreilly et al., Apache-2.0.
 https://github.com/ccoreilly/vosk-browser
 Vosk French and Italian small acoustic models 0.22, Alpha Cephei, Apache-2.0.
