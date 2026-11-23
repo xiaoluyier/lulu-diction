@@ -1,3 +1,4 @@
+import {slowSpeech} from './slow-speech.js';
 let worker,seq=0,ctx,source,utter,cancelPlay,serial=0;const pending=new Map();
 function engine(args){if(!worker){worker=new Worker(new URL('./engine-worker.js',import.meta.url),{type:'module'});worker.onmessage=({data})=>{const pair=pending.get(data.id);if(!pair)return;pending.delete(data.id);data.error?pair[1](Error(data.error)):pair[0](data)};worker.onerror=()=>{for(const p of pending.values())p[1](Error('语音组件未加载，请刷新重试。'));pending.clear();worker.terminate();worker=null;};}return new Promise((resolve,reject)=>{const id=++seq;pending.set(id,[resolve,reject]);worker.postMessage({id,...args})});}
 export const transcribe=async(lang,words)=>(await engine({lang,words})).ipa;
@@ -12,9 +13,22 @@ export function stop(){serial++;cancelPlay?.();cancelPlay=null;media?.pause();me
 export async function speak(text,lang,rate=1){
  stop();const id=serial;await unlock();
  prepared??=import('./voice-clips.js').then(m=>m.clips).catch(()=>({}));const path=(await prepared)[lang+'|'+text.toLowerCase().trim()];if(id!==serial)return false;
- if(path){try{return await new Promise((ok,no)=>{const a=media=new Audio(new URL('./clips/'+path,import.meta.url));a.preservesPitch=true;a.playbackRate=rate;a.onended=()=>ok(id===serial);a.onerror=()=>no(Error());cancelPlay=()=>ok(false);a.play().catch(no)})}catch{if(id!==serial)return false}}
+ if(path && rate>=1){try{return await new Promise((ok,no)=>{const a=media=new Audio(new URL('./clips/'+path,import.meta.url));a.preservesPitch=true;a.playbackRate=rate;a.onended=()=>ok(id===serial);a.onerror=()=>no(Error());cancelPlay=()=>ok(false);a.play().catch(no)})}catch{if(id!==serial)return false}}
+ let d;
+ if(path && rate<1){
+  try{
+   const response=await fetch(new URL('./clips/'+path,import.meta.url));
+   if(!response.ok)throw Error('音频加载失败');
+   const decoded=await ctx.decodeAudioData(await response.arrayBuffer());
+   d={samples:decoded.getChannelData(0),hz:decoded.sampleRate};
+  }catch{if(id!==serial)return false}
+ }
+ if(!d){
  const wait=setTimeout(()=>{if(id===serial)window.dispatchEvent(new Event('preparing-natural-voice'))},900);
- let d;try{d=await render(text,lang,rate)}finally{clearTimeout(wait)}
+ try{d=await render(text,lang,rate<1?1:rate)}finally{clearTimeout(wait)}
+ }
+ if(id!==serial)return false;
+ if(rate<1)d={samples:slowSpeech(d.samples,d.hz,rate),hz:d.hz};
  if(id!==serial)return false;const b=ctx.createBuffer(1,d.samples.length,d.hz);b.copyToChannel(d.samples,0);
  return new Promise(ok=>{source=ctx.createBufferSource();source.buffer=b;source.connect(ctx.destination);source.onended=()=>ok(id===serial);cancelPlay=()=>ok(false);source.start()});
 }
