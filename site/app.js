@@ -15,7 +15,33 @@ const titles={words:'逐词跟读',lines:'逐句连读',review:'发音纠正'},i
 const labelLang=lang=>lang==='it'?'意大利语':'法语';
 function msg(s){$('#toast').textContent=s;clearTimeout(tt);tt=setTimeout(()=>$('#toast').textContent='',3500)}
 function save(){try{localStorage.setItem(store,JSON.stringify(data))}catch{msg('设备存储空间不足，本次进度未保存。')}}
-function reward(s){if(!s||!data.gifts)return;$('#rewardText').textContent=s;$('#reward').hidden=false;clearTimeout(rt);rt=setTimeout(()=>$('#reward').hidden=true,3000)}
+let coverCursor = 0;
+try { coverCursor = Number(localStorage.getItem('lumei.coverIndex') || 0) % 9; } catch {}
+const momentId = index => String(index + 1).padStart(2, '0');
+const coverImage = './assets/moments/' + momentId(coverCursor) + '-face.webp';
+try { localStorage.setItem('lumei.coverIndex', String((coverCursor + 1) % 9)); } catch {}
+function reward(s) {
+ if (!s || !data.gifts) return;
+ const index = Number(data.rewardIndex || 0) % 9;
+ const base = './assets/moments/' + momentId(index);
+ $('#reward source').srcset = base + '-face.webp';
+ $('#reward img').src = base + '.gif';
+ data.rewardIndex = (index + 1) % 9;
+ save();
+ $('#rewardText').textContent = s;
+ $('#reward').hidden = false;
+ clearTimeout(rt);
+ rt = setTimeout(() => $('#reward').hidden = true, 3000);
+}
+async function openAlbum() {
+ const response = await fetch('./assets/album.json?v=moments');
+ if (!response.ok) throw Error('相册暂时未能打开。');
+ const photos = await response.json();
+ const cards = photos.map(photo =>
+  '<a target="_blank" rel="noopener" href="'+e(photo.image)+'"><img src="'+e(photo.image)+'" alt="'+e(photo.label)+'"><strong>'+e(photo.label)+'</strong></a>'
+ );
+ sheet('<h2>噜妹相册</h2><div class="gallery moments">'+cards.join('')+'</div>');
+}
 function reset(){run++;busy=false;playing='';stop();clearTimeout(recTimer);if(rec){rec();rec=null}if(recURL){URL.revokeObjectURL(recURL);recURL=''}runStatus='';report=''}
 function go(v,i=0,j=-1){reset();view=v;line=i;pos=j;draw();window.scrollTo({top:0})}
 function sheet(content){$('#dialogBody').innerHTML='<div class="split" style="justify-content:flex-end">'+btn('close','关闭','x','tool')+'</div>'+content;modal.showModal()}
@@ -27,7 +53,7 @@ function fillIPA(){document.querySelectorAll('[data-ipa]').forEach(x=>{const v=c
 function notes(s,kind,key){const n=s.notes.filter(n=>kind==='words'?n.key===key:n.line===key);if(!n.length)return '';return '<details><summary>纠音记录 · '+n.length+'</summary>'+n.map(v=>'<p class="note">第 '+(v.line+1)+' 句 · '+e(tokens(s.lines[v.line])[v.pos])+'：'+e(v.reason)+' '+e(v.tip)+'</p>').join('')+'</details>'}
 function marked(s,i){let j=0;return s.lines[i].replace(/[^\p{L}\p{M}'’‑-]+|\p{L}[\p{L}\p{M}]*(?:['’‑-]\p{L}[\p{L}\p{M}]*)*|./gu,t=>{if(!tokens(t).length)return e(t);const index=j++;const issue=s.notes.some(n=>n.line===i&&n.pos===index);return issue?'<span class="marked">'+e(t)+'</span>':e(t)})}
 function draw(){const s=song(),ws=vocab(s),wq=s.wordQueue.length,lq=s.lineQueue.length;
- if(view==='home'){app.innerHTML='<div class="titleline"><h1>歌曲手帖</h1>'+btn('import','导入歌曲','plus')+'</div><div class="songhead"><img alt="" class="cover" src="./assets/'+s.lang+'-cover.png"><div><div class="meta"><span class="tag">'+labelLang(s.lang)+'</span><span>'+ws.length+' 个词 · '+s.lines.length+' 句</span></div><h2 lang="'+s.lang+'">'+e(s.title)+'</h2><select class="songSelect" id="selectSong" aria-label="选择歌曲">'+data.songs.map(x=>option(x.id,x.title,x.id===s.id)).join('')+'</select></div><button class="starPhoto" data-do="album" aria-label="打开噜妹相册"><img width="123" height="113" src="./assets/lumei.png" alt="花边帽噜妹"><span>噜妹相册</span></button></div><section class="section"><div class="titleline"><h2>练习目录</h2><small>本曲进度</small></div><div class="modules">'+Object.keys(titles).map((k,i)=>{const n=[wq,lq,0][i];return '<button class="module" data-do="go" data-v="'+k+'"><span class="tile">'+ico(icons[k])+'</span><span><strong>'+titles[k]+'</strong><small>'+[s.heardW.length+' / '+ws.length+' 个词已听',s.heardL.length+' / '+s.lines.length+' 句已听',s.notes.length?'已记录 '+s.notes.length+' 处复练提示':'选择一句或一个词录音'][i]+'</small></span>'+ico('chevron-right')+(n?'<b class="badge" aria-label="'+n+' 项待复听">'+n+'</b>':'')+'</button>'}).join('')+'</div></section>';return}
+ if(view==='home'){app.innerHTML='<div class="titleline"><h1>歌曲手帖</h1>'+btn('import','导入歌曲','plus')+'</div><div class="songhead"><img alt="" class="cover" src="./assets/'+s.lang+'-cover.png"><div><div class="meta"><span class="tag">'+labelLang(s.lang)+'</span><span>'+ws.length+' 个词 · '+s.lines.length+' 句</span></div><h2 lang="'+s.lang+'">'+e(s.title)+'</h2><select class="songSelect" id="selectSong" aria-label="选择歌曲">'+data.songs.map(x=>option(x.id,x.title,x.id===s.id)).join('')+'</select></div><button class="starPhoto" data-do="album" aria-label="打开噜妹相册"><img width="123" height="113" src="'+coverImage+'" alt="噜妹"><span>噜妹相册</span></button></div><section class="section"><div class="titleline"><h2>练习目录</h2><small>本曲进度</small></div><div class="modules">'+Object.keys(titles).map((k,i)=>{const n=[wq,lq,0][i];return '<button class="module" data-do="go" data-v="'+k+'"><span class="tile">'+ico(icons[k])+'</span><span><strong>'+titles[k]+'</strong><small>'+[s.heardW.length+' / '+ws.length+' 个词已听',s.heardL.length+' / '+s.lines.length+' 句已听',s.notes.length?'已记录 '+s.notes.length+' 处复练提示':'选择一句或一个词录音'][i]+'</small></span>'+ico('chevron-right')+(n?'<b class="badge" aria-label="'+n+' 项待复听">'+n+'</b>':'')+'</button>'}).join('')+'</div></section>';return}
  let top=btn('home','曲目','chevron-left','back')+'<div class="titleline"><div><small>'+e(s.title)+' · '+labelLang(s.lang)+'</small><h1>'+titles[view]+'</h1></div></div>';
  if(view==='review'){const txt=target(),words=tokens(s.lines[line]);app.innerHTML=top+'<div class="sheet stack"><label>选择原句<select id="lineSel" '+(busy?'disabled':'')+'>'+s.lines.map((l,i)=>option(i,(i+1)+' · '+l,i===line)).join('')+'</select></label><label>练习范围<select id="posSel" '+(busy?'disabled':'')+'>'+option(-1,'整句',pos<0)+words.map((w,j)=>option(j,w,j===pos)).join('')+'</select></label><div class="focus" lang="'+s.lang+'">'+e(txt)+'</div><div class="actions">'+btn('sample','听示范','volume-2')+btn('record',rec?'结束并纠音':'开始录音',rec?'square':'mic',rec?'action rec':'primary')+'</div><div id="status" class="busy" role="status">'+e(runStatus||((opt.azure?'专业发音评测':'本机辨读')+' · 最长 30 秒'))+'</div>'+(recURL?'<audio controls src="'+recURL+'"></audio>':'')+'</div>'+report+notes(s,'lines',line);const b=$('[data-do=record]');b.disabled=busy&&!rec;$('[data-do=sample]').disabled=busy;return}
  const w=view==='words',items=w?ws:s.lines.map((_,i)=>i);
@@ -50,7 +76,7 @@ async function record(){const s=song(),token=run;if(rec){clearTimeout(recTimer);
  }catch(err){if(run===token)runStatus=err.message}finally{if(run===token){busy=false;draw()}}return;}
  if(busy)return;stop();busy=true;report='';if(recURL){URL.revokeObjectURL(recURL);recURL=''}runStatus='正在打开麦克风…';draw();try{const finish=await capture();if(run!==token){finish();return}rec=finish;runStatus='正在录音，读完点「结束并纠音」。';draw();recTimer=setTimeout(()=>{if(rec&&run===token)record()},30000)}catch{if(run===token){busy=false;runStatus='未能打开麦克风，请检查浏览器的麦克风权限。';draw()}}}
 document.addEventListener('click',async ev=>{const b=ev.target.closest('[data-do]');if(!b)return;const a=b.dataset.do,v=b.dataset.v;try{
- if(a==='copyGuide'){try{await navigator.clipboard.writeText(guideWithExamples);msg('提示词和两个例子已复制。')}catch{$('#guideDetails').open=true;$('#guideText').focus();$('#guideText').select();msg('已选中提示词和例子，请复制。')}}else if(a==='album'){const r=await fetch('./assets/album.json');if(!r.ok)throw Error('相册暂时未能打开。');const pics=await r.json();sheet('<h2>噜妹相册</h2><div class="gallery">'+pics.map(p=>'<a target="_blank" rel="noopener noreferrer" href="'+e(p.href)+'"><img src="'+e(p.image)+'" alt="'+e(p.title)+'"><strong>'+e(p.label)+'</strong><small>'+e(p.author)+' · 原作 ↗</small></a>').join('')+'</div>');}else if(a==='close')modal.close();else if(a==='import')importSheet();else if(a==='template'){ev.preventDefault();$('#raw').value=template} else if(a==='copy'){ev.preventDefault();try{await navigator.clipboard.writeText(template);msg('模板已复制。')}catch{$('#raw').value=template;$('#raw').select()}}
+ if(a==='copyGuide'){try{await navigator.clipboard.writeText(guideWithExamples);msg('提示词和两个例子已复制。')}catch{$('#guideDetails').open=true;$('#guideText').focus();$('#guideText').select();msg('已选中提示词和例子，请复制。')}}else if(a==='album'){await openAlbum()}else if(a==='close')modal.close();else if(a==='import')importSheet();else if(a==='template'){ev.preventDefault();$('#raw').value=template} else if(a==='copy'){ev.preventDefault();try{await navigator.clipboard.writeText(template);msg('模板已复制。')}catch{$('#raw').value=template;$('#raw').select()}}
  else if(a==='home'||a==='go')go(a==='home'?'home':v);else if(a==='listen')await playOne(v);else if(a==='auto')await auto();else if(a==='check'){if(view==='lines')go('review',+v);else{const x=vocab(song()).find(w=>w.key===v);const n=song().notes.find(z=>z.key===v);go('review',n?.line??x.line,n?.pos??x.pos)}}else if(a==='record')await record();else if(a==='sample'){await speak(target(),song().lang,data.rate)}
  }catch(err){msg(err.message||'请重试。')}});
 document.addEventListener('change',ev=>{const id=ev.target.id,v=ev.target.value;if(id==='selectSong'){data.id=v;save();go('home')}else if(id==='lineSel')go('review',+v);else if(id==='posSel')go('review',line,+v);else if(id==='rate'){data.rate=Number(v);save()}});
